@@ -153,14 +153,7 @@ data "aws_iam_policy_document" "policy" {
     actions = [
       "s3:*"
     ]
-
-    condition {
-      test     = "StringEquals"
-      variable = "s3:ExistingObjectTag/UseWithCodeDeploy"
-      values   = ["true"]
-    }
-
-    resources = ["*"]
+    resources = ["arn:aws:s3:::ba-ecs-stressapp-revision"]
   }
 }
 
