@@ -11,7 +11,7 @@ resource "aws_codedeploy_deployment_group" "codedeploy" {
   app_name               = aws_codedeploy_app.codedeploy.name
   deployment_config_name = "CodeDeployDefault.ECSCanary10Percent5Minutes"
   deployment_group_name  = "ba-ecs-CodeDeploy"
-  service_role_arn       = "arn:aws:iam::189141687483:role/ba_tf_ecsdeploystudy"
+  service_role_arn       = aws_iam_role.codedeploy.arn
 
   auto_rollback_configuration {
     enabled = true
