@@ -21,7 +21,7 @@ resource "aws_codedeploy_deployment_group" "codedeploy" {
   blue_green_deployment_config {
     deployment_ready_option {
       action_on_timeout = "CONTINUE_DEPLOYMENT" # CONTINUE_DEPLOYMENT or STOP_DEPLOYMENT
-      wait_time_in_minutes = "${var.wait_time_in_minutes}" # Duration to wait before the status of a 
+      wait_time_in_minutes = var.wait_time_in_minutes # Duration to wait before the status of a 
                                                            # blue/green deployment changed to Stopped. 
                                                            # ONLY IF action_on_timeout = STOP_DEPLOYMENT 
     }
@@ -64,19 +64,110 @@ resource "aws_codedeploy_deployment_group" "codedeploy" {
   }
 }
 
-# resource "aws_iam_role" "codedeploy" {
-#   name               = "ba_cd_role"
-#   assume_role_policy = data.aws_iam_policy_document.assume_role_policy.json
-#   description        = "Code Deploy role for ECS stressapp rolling update"
-# }
+resource "aws_iam_role" "codedeploy" {
+  name               = "ba_cd_role"
+  assume_role_policy = data.aws_iam_policy_document.assume_role_policy.json
+  description        = "Code Deploy role for ECS stressapp rolling update"
+}
 
-# data "aws_iam_policy_document" "assume_role_policy" {
-#   statement {
-#     actions = ["sts:AssumeRole"]
+data "aws_iam_policy_document" "assume_role_policy" {
+  statement {
+    actions = ["sts:AssumeRole"]
 
-#     principals {
-#       type        = "Service"
-#       identifiers = ["codedeploy.amazonaws.com"]
-#     }
-#   }
-# }
+    principals {
+      type        = "Service"
+      identifiers = ["codedeploy.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_policy" "default" {
+  name        = "ba-ecs-codedeploy"
+  policy      = data.aws_iam_policy_document.policy.json
+  description = ""
+}
+
+data "aws_iam_policy_document" "policy" {
+  
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "iam:PassRole",
+    ]
+
+    resources = ["*"]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "ecs:DescribeServices",
+      "ecs:CreateTaskSet",
+      "ecs:UpdateServicePrimaryTaskSet",
+      "ecs:DeleteTaskSet",
+      "cloudwatch:DescribeAlarms",
+    ]
+
+    resources = ["*"]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "sns:Publish",
+    ]
+
+    resources = ["arn:aws:sns:*:*:CodeDeployTopic_*"]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "elasticloadbalancing:DescribeTargetGroups",
+      "elasticloadbalancing:DescribeListeners",
+      "elasticloadbalancing:ModifyListener",
+      "elasticloadbalancing:DescribeRules",
+      "elasticloadbalancing:ModifyRule",
+    ]
+
+    resources = ["*"]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "lambda:InvokeFunction",
+    ]
+
+    resources = ["arn:aws:lambda:*:*:function:CodeDeployHook_*"]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "s3:GetObject",
+      "s3:GetObjectMetadata",
+      "s3:GetObjectVersion",
+    ]
+
+    condition {
+      test     = "StringEquals"
+      variable = "s3:ExistingObjectTag/UseWithCodeDeploy"
+      values   = ["true"]
+    }
+
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "default" {
+  role       = aws_iam_role.codedeploy.name
+  policy_arn = aws_iam_policy.default.arn
+}
+
