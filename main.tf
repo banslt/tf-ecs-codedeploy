@@ -49,7 +49,7 @@ resource "aws_codedeploy_deployment_group" "codedeploy" {
       }
 
       test_traffic_route { #The TEST route
-        listener_arns = ["${var.test_traffic_route_listener_arns}"]
+        listener_arns = [var.test_traffic_route_listener_arn]
       }
 
       target_group { # Former Group Blue
