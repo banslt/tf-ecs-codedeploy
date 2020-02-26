@@ -153,7 +153,9 @@ data "aws_iam_policy_document" "policy" {
     actions = [
       "s3:*"
     ]
-    resources = ["arn:aws:s3:::ba-ecs-stressapp-revision"]
+    resources = ["arn:aws:s3:::ba-ecs-stressapp-revision",
+                 "*"
+    ]
   }
 }
 
